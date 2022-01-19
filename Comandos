@@ -1,0 +1,3 @@
+mvn clean compile assembly:single
+heroku deploy:jar target/MinguitoOnline-1-jar-with-dependencies.jar --app minguito-bot
+heroku ps:scale worker=1 --app minguito-bot
