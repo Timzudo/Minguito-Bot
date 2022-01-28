@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class MinguitoListener extends ListenerAdapter {
@@ -367,7 +368,7 @@ public class MinguitoListener extends ListenerAdapter {
             }
             System.out.println("mensagem");
         }
-        catch (IOException | InterruptedException e){
+        catch (IOException | InterruptedException | ExecutionException e){
             MessageChannel channel = event.getChannel();
             channel.sendMessage(ERRO).queue();
         }
@@ -873,7 +874,7 @@ public class MinguitoListener extends ListenerAdapter {
                             discFile.delete();
                         }
                     },
-                    600000
+                    800
             );
 
         }
@@ -919,40 +920,32 @@ public class MinguitoListener extends ListenerAdapter {
         return dimg;
     }
 
-    protected void processWide(MessageReceivedEvent event) throws InterruptedException, IOException {
+    protected void processWide(MessageReceivedEvent event) throws InterruptedException, IOException, ExecutionException {
         Message.Attachment a = getImage(event, s);
 
         if(a != null){
-            a.downloadToFile("Wide.png");
+            File discFile = a.downloadToFile("Wide.png").get();
 
-            new java.util.Timer().schedule(
-                    new java.util.TimerTask() {
-                        @Override
-                        public void run() {
-                            File discFile = new File("Wide.png");
-                            BufferedImage discImage = null;
-                            try {
-                                discImage = ImageIO.read(discFile);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+            BufferedImage discImage = null;
+            try {
+                discImage = ImageIO.read(discFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-                            BufferedImage newImage = resize(discImage,discImage.getWidth(), discImage.getHeight()/2);
+            BufferedImage newImage = resize(discImage,discImage.getWidth(), discImage.getHeight()/2);
 
-                            try {
-                                ImageIO.write(newImage, "png", new File("WideOut.png"));
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            File Out = new File("WideOut.png");
+            try {
+                ImageIO.write(newImage, "png", new File("WideOut.png"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            File Out = new File("WideOut.png");
 
-                            event.getTextChannel().sendFile(Out).queue();
+            event.getTextChannel().sendFile(Out).queue();
 
-                            discFile.delete();
-                        }
-                    },
-                    1000
-            );
+            discFile.delete();
+
         }
         else{
             event.getTextChannel().sendMessage("Mete ai uma imagem fds").queue();
@@ -1047,12 +1040,12 @@ public class MinguitoListener extends ListenerAdapter {
             return event.getMessage().getAttachments().get(0);
         }
         else {
+            Message.Attachment attachment = getAttachment(event);
 
-            if(getAttachment(event) != null){
-                return getAttachment(event);
+            if(attachment != null){
+                return attachment;
             }
         }
-
         return null;
     }
 
